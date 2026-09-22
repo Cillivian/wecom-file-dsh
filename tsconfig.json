@@ -1,0 +1,19 @@
+{
+  "extends": "/Users/cillivian/Documents/deepseek-harness/tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src/my-plugin.ts",
+    "src/wecom-wedrive-ref-skill.ts"
+  ],
+  "references": [
+    {
+      "path": "/Users/cillivian/Documents/deepseek-harness/vendor/cordis"
+    },
+    {
+      "path": "/Users/cillivian/Documents/deepseek-harness/packages/core/tools"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "extends": "/Users/cillivian/Documents/deepseek-harness/tsconfig.base.client.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "incremental": false,
+    "declaration": false,
+    "declarationMap": false,
+    "rootDir": "src/client"
+  },
+  "include": [
+    "src/client"
+  ]
+}

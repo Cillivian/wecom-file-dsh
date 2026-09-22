@@ -1,0 +1,22 @@
+# 贴进 Whistle / Whistle2 的 Rules。先删 /etc/hosts 里的 127.0.0.1 doc.weixin.qq.com。
+# DSH 必须带: --trusted-host doc.weixin.qq.com
+# 打开: https://doc.weixin.qq.com/dsh/?token=（用 dsh web 打印的那一段）
+#
+# 403 forbidden = Host/Origin 围栏。常见情况：转发到 3080 后 Host 变成 127.0.0.1:3080，
+# 但浏览器 Origin 仍是 https://doc.weixin.qq.com。reqHeaders 必须写在同一行转发上。
+
+doc.weixin.qq.com enable://https
+
+https://doc.weixin.qq.com/dsh/ http://127.0.0.1:3080/ reqHeaders://host=doc.weixin.qq.com
+https://doc.weixin.qq.com/dsh http://127.0.0.1:3080/ reqHeaders://host=doc.weixin.qq.com
+https://doc.weixin.qq.com/plugins http://127.0.0.1:3080/plugins reqHeaders://host=doc.weixin.qq.com
+https://doc.weixin.qq.com/assets http://127.0.0.1:3080/assets reqHeaders://host=doc.weixin.qq.com
+https://doc.weixin.qq.com/api http://127.0.0.1:3080/api reqHeaders://host=doc.weixin.qq.com
+wss://doc.weixin.qq.com/api ws://127.0.0.1:3080/api reqHeaders://host=doc.weixin.qq.com
+ws://doc.weixin.qq.com/api ws://127.0.0.1:3080/api reqHeaders://host=doc.weixin.qq.com
+https://doc.weixin.qq.com/open-in-app http://127.0.0.1:3080/open-in-app reqHeaders://host=doc.weixin.qq.com
+https://doc.weixin.qq.com/manifest.webmanifest http://127.0.0.1:3080/manifest.webmanifest reqHeaders://host=doc.weixin.qq.com
+https://doc.weixin.qq.com/favicon.svg http://127.0.0.1:3080/favicon.svg reqHeaders://host=doc.weixin.qq.com
+
+https://doc.weixin.qq.com/dsh resHeaders://location=/dsh/ includeFilter://statusCode=303
+https://doc.weixin.qq.com/dsh resReplace:///Users/cillivian/Documents/workspace/dsh/whistle-res-replace.json
