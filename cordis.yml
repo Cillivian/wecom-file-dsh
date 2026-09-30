@@ -1,3 +1,12 @@
+# Standalone `--patch` overlay template for `dsh web`.
+#
+# Do not edit the path here: `pnpm web` regenerates `cordis.dev.yml` with this
+# checkout's absolute path (see tools/dev-patch.mjs). Prefer installing the
+# package as a profile bundle — an overlay only resolves `@deepseek-ai/*` for
+# plugin paths inside the profile tree or its linked roots.
+#
+# This template is kept as documentation of the overlay shape and as the file a
+# reader may copy by hand.
 - insert:
     - id: wecom-picker
-      name: '/Users/cillivian/Documents/workspace/dsh/src/my-plugin.ts'
+      name: '<absolute path to wecom-file-dsh>/src/host/index.ts'

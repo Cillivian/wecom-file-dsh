@@ -1,3 +1,14 @@
+/**
+ * Official WeCom selector iframe contract: the picker URL, the origin that may
+ * post results, and the `IWedriveFileSelectorResponse` parser.
+ *
+ * The panel currently lists files through `wecom-cli` (see `src/host/wecom-cli.ts`)
+ * because the desktop app cannot hold a WeCom web session in a cross-site
+ * iframe. This module is retained for the planned proxy phase, which serves the
+ * official selector from a same-site origin; until then `WecomSelectedFile` is
+ * its live consumer.
+ */
+
 /** Hard-coded WeCom WeDrive file-selector page. */
 export const WECOM_SELECTOR_URL
   = 'https://doc.weixin.qq.com/webdisk/index?t=wedriveFileSelectorForWework&weworkType=-1&multiSelectable=true&selectFileMaxlength=10'

@@ -1,0 +1,15 @@
+# Bundle layer for wecom-dsh-plugins (repository: wecom-file-dsh).
+#
+# One package carries both halves: this layer inserts the single Loader row named
+# `wecom-dsh-plugins`. The row resolves the package's host half
+# (`exports["."]` -> `src/host/index.ts`, loaded through Node's built-in
+# TypeScript type stripping), and the package's `dsh.client` declaration puts the
+# browser half (`exports["./client"]` -> `lib/client.js`) into the client boot
+# graph.
+#
+# The dsh packages this plugin imports at runtime are declared under
+# `peerDependencies`, so the host runtime resolution supplies the running
+# installation's instance instead of a second copy.
+- insert:
+    - id: wecom-picker
+      name: wecom-dsh-plugins

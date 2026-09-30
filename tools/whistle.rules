@@ -19,4 +19,5 @@ https://doc.weixin.qq.com/manifest.webmanifest http://127.0.0.1:3080/manifest.we
 https://doc.weixin.qq.com/favicon.svg http://127.0.0.1:3080/favicon.svg reqHeaders://host=doc.weixin.qq.com
 
 https://doc.weixin.qq.com/dsh resHeaders://location=/dsh/ includeFilter://statusCode=303
-https://doc.weixin.qq.com/dsh resReplace:///Users/cillivian/Documents/workspace/dsh/whistle-res-replace.json
+# 下面的 resReplace 需要一个绝对路径：把 <repo> 换成本仓库路径后再取消注释。
+# https://doc.weixin.qq.com/dsh resReplace://<repo>/tools/whistle-res-replace.json

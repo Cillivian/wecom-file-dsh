@@ -10,8 +10,8 @@
  * Setup without Whistle:
  *   1. sudo sh -c 'grep -q "doc.weixin.qq.com" /etc/hosts || echo "127.0.0.1 doc.weixin.qq.com" >> /etc/hosts'
  *   2. mkcert -install && mkdir -p certs && mkcert -cert-file certs/doc.weixin.qq.com.pem -key-file certs/doc.weixin.qq.com-key.pem doc.weixin.qq.com
- *   3. pnpm --dir /Users/cillivian/Documents/deepseek-harness dsh web --patch /Users/cillivian/Documents/workspace/dsh/cordis.yml --trusted-host doc.weixin.qq.com --no-open
- *   4. sudo node /Users/cillivian/Documents/workspace/dsh/dev-proxy.mjs
+ *   3. dsh web --patch "$PWD/cordis.dev.yml" --trusted-host doc.weixin.qq.com --no-open
+ *   4. sudo node "$PWD/tools/dev-proxy.mjs"
  *   5. Open https://doc.weixin.qq.com/dsh/?token=… (token from the dsh web line)
  */
 import { Resolver } from 'node:dns/promises'
@@ -213,7 +213,7 @@ server.listen(LISTEN_PORT, '127.0.0.1', () => {
 })
 server.on('error', (error) => {
   if (error.code === 'EACCES') {
-    console.error(`dev-proxy: port ${String(LISTEN_PORT)} needs root (sudo node /Users/cillivian/Documents/workspace/dsh/dev-proxy.mjs)`)
+    console.error(`dev-proxy: port ${String(LISTEN_PORT)} needs root (sudo node ${process.argv[1] ?? 'tools/dev-proxy.mjs'})`)
   } else if (error.code === 'EADDRINUSE') {
     console.error(`dev-proxy: port ${String(LISTEN_PORT)} is already in use`)
   } else {

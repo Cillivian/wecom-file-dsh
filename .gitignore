@@ -1,3 +1,8 @@
-certs/
-lib/*.map
 node_modules/
+lib/*.map
+lib/types/
+lib/*.tsbuildinfo
+certs/
+cordis.dev.yml
+.tmp/
+.DS_Store

@@ -7,7 +7,7 @@ import type { InputState } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {
   InputTriggerServiceContract, InputTriggerSource,
 } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
-import type { WecomSelectedFile } from './selector.ts'
+import type { WecomSelectedFile } from './iframe/selector.ts'
 
 /** Trigger-source name; also the chip `source` and serialize routing key. */
 export const WEDRIVE_SOURCE = 'wedrive'

@@ -1,15 +1,29 @@
 {
-  "name": "dsh-scratch-plugin",
+  "name": "wecom-dsh-plugins",
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "description": "DeepSeek Harness plugin: a WeCom WeDrive picker on the composer that inserts @ chips, backed by wecom-cli with the official selector as fallback.",
+  "license": "UNLICENSED",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "wecom",
+    "wedrive",
+    "wecom-cli"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
-    "bundle": "/Users/cillivian/Documents/deepseek-harness/node_modules/.bin/tsdown --config tsdown.config.ts --root /Users/cillivian/Documents/workspace/dsh --tsconfig tsconfig.client.json",
-    "web": "cd /Users/cillivian/Documents/deepseek-harness && pnpm dsh web --patch /Users/cillivian/Documents/workspace/dsh/cordis.yml --trusted-host doc.weixin.qq.com --no-open",
-    "proxy": "node ./dev-proxy.mjs"
+    "bundle": "node tools/bundle.mjs",
+    "test": "node --test",
+    "web": "node tools/dev-patch.mjs && dsh web --patch ./cordis.dev.yml --no-open",
+    "proxy": "node tools/dev-proxy.mjs"
   },
   "exports": {
-    ".": "./src/my-plugin.ts",
+    ".": "./src/host/index.ts",
     "./client": "./lib/client.js",
     "./package.json": "./package.json"
   },
@@ -23,9 +37,15 @@
         "@deepseek-ai/dsh-client-ui-input-trigger",
         "@deepseek-ai/dsh-client-ui-primitives"
       ]
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
     }
   },
-  "dependencies": {
-    "@tencent/wedocs-icons": "^0.3.26091100"
-  }
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-skill": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "packageManager": "pnpm@11.20.0"
 }

@@ -1,19 +1,19 @@
 {
-  "extends": "/Users/cillivian/Documents/deepseek-harness/tsconfig.base.json",
+  // Standalone on purpose: this package installs no dependencies, and the
+  // `@deepseek-ai/*` types come from the running DeepSeek Harness installation.
+  // To type-check locally, uncomment and point this at your checkout:
+  // "extends": "../deepseek-harness/tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "lib/types"
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true
   },
-  "include": [
-    "src/my-plugin.ts",
-    "src/wecom-wedrive-ref-skill.ts"
-  ],
-  "references": [
-    {
-      "path": "/Users/cillivian/Documents/deepseek-harness/vendor/cordis"
-    },
-    {
-      "path": "/Users/cillivian/Documents/deepseek-harness/packages/core/tools"
-    }
-  ]
+  "include": ["src/host", "src/shared"]
 }

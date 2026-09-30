@@ -1,14 +1,19 @@
 {
-  "extends": "/Users/cillivian/Documents/deepseek-harness/tsconfig.base.client.json",
+  // Standalone on purpose; see tsconfig.json. `tsdown` reads this file for the
+  // JSX transform and target only — it does not type-check.
+  // "extends": "../deepseek-harness/tsconfig.base.client.json",
   "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "strict": true,
     "noEmit": true,
-    "composite": false,
-    "incremental": false,
-    "declaration": false,
-    "declarationMap": false,
-    "rootDir": "src/client"
+    "skipLibCheck": true
   },
-  "include": [
-    "src/client"
-  ]
+  "include": ["src/client", "src/shared"]
 }

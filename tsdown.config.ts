@@ -1,6 +1,6 @@
 import type { UserConfig } from 'tsdown'
 
-const id = 'dsh-scratch-plugin'
+const id = 'wecom-dsh-plugins'
 const externals = new Set([
   'react',
   'react/jsx-runtime',
