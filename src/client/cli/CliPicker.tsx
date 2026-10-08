@@ -18,6 +18,7 @@ import { fetchPickerFiles, fetchPickerStatus, startPickerAuth } from './api.ts'
 import { BlockedView, EmptyState, LoadingRows } from './States.tsx'
 import { PickerToolbar } from './Toolbar.tsx'
 import { ColumnsView, GalleryView, ListView } from './Views.tsx'
+import { useWindowDrag } from '../window-drag.ts'
 
 /** Locale lookup owned by the slot component. */
 type T = (key: WecomPickerKey) => string
@@ -62,6 +63,8 @@ export interface PickerWindowProps {
 export function PickerWindow({ onConfirm, onClose, onUseIframe, t }: PickerWindowProps) {
   const dialog = useRef<HTMLDivElement>(null)
   const search = useRef<HTMLInputElement>(null)
+  // The window opens centered but is not pinned there: its chrome drags it.
+  const drag = useWindowDrag(dialog)
   const [preferences, setPreferences] = useState<WecomViewPreferences>(loadPreferences)
   const [query, setQuery] = useState('')
   const [items, setItems] = useState<readonly PickerItem[]>([])
@@ -356,12 +359,13 @@ export function PickerWindow({ onConfirm, onClose, onUseIframe, t }: PickerWindo
       <div className="wcp-overlay" role="presentation">
         <div className="wcp-scrim" aria-hidden="true" onClick={onClose} />
         <div
-          className="wcp-window"
+          className={drag.dragging ? 'wcp-window wcp-window--dragging' : 'wcp-window'}
           role="dialog"
           aria-modal="true"
           aria-label={t('panel.title')}
           tabIndex={-1}
           ref={dialog}
+          style={drag.style}
           onKeyDown={onKeyDown}
         >
           <PickerToolbar
@@ -375,6 +379,8 @@ export function PickerWindow({ onConfirm, onClose, onUseIframe, t }: PickerWindo
             onSortDirection={(direction) => { setPreferences(previous => ({ ...previous, sortDirection: direction })) }}
             onClose={onClose}
             searchRef={search}
+            chromeProps={drag.chromeProps}
+            handleProps={drag.handleProps}
             t={t}
           />
           <div className="wcp-content">{content}</div>

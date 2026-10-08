@@ -9,6 +9,7 @@ export const zh = {
 
   // Window chrome
   'panel.title': '微盘',
+  'panel.drag': '拖动窗口位置；方向键微调，点击回到居中',
   'panel.close': '关闭',
   'panel.cancel': '取消',
   'panel.confirm': '插入',
@@ -112,6 +113,7 @@ export const en: Record<WecomPickerKey, string> = {
   'menu.description': 'Pick a WeDrive file or folder and insert it as a reference',
 
   'panel.title': 'WeDrive',
+  'panel.drag': 'Drag to move this window; arrow keys nudge, click to re-center',
   'panel.close': 'Close',
   'panel.cancel': 'Cancel',
   'panel.confirm': 'Insert',

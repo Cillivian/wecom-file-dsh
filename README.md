@@ -22,6 +22,7 @@ flowchart LR
 
 - 输入条左侧工具栏增加「企业微信·微盘」按钮
 - 弹层是 macOS 26 Finder 风格的毛玻璃窗口：统一工具栏 + 分段查看方式 + 排序菜单 + 搜索框 + 状态栏
+- 窗口可拖动（拖标题或工具栏空白处），位置会被记住；标题也是键盘手柄，方向键微调、点击回到居中
 - 三种查看方式、五个排序字段（升降序）、实时搜索、滚动加载更多、多选（最多 10 项）
 - 授权失效时弹层内直接展示 `wecom-cli` 的扫码二维码
 - 运行时技能 `wecom-wedrive-ref`（chip → `wecomcli-*` 路由）与 `wecom-wedrive-picker-setup`（安装 / 配置 / 排查）
@@ -90,6 +91,7 @@ pnpm add wecom-dsh-plugins@link:/abs/path/to/wecom-file-dsh
 - **焦点**：搜索框只保留一个提示——聚焦时输入框本身不画 outline / box-shadow，由容器边框 + 强调色光环表示
 - **图标**：腾讯文档官方文件类型图标，已扣成内置组件（`src/client/assets/WedocsFileIcons.tsx`），不依赖 npm 包。在线文档走 20px 字形（`file-tdoc-20` / `file-smartdoc-20` / `file-space-20` …），微盘本地文件走 16px 字形（`file-pdf-default-inline` …）。类型映射见 `src/client/cli/model.ts` 的 `fileIconKey()`：先看 CLI `type`，只给 `file` 时按扩展名兜底
 - **偏好**：排序与查看方式存 `localStorage`（`wecom-picker/preferences/v1`）
+- **窗口**：弹层是可拖动的浮动窗口，不是钉在中央的固定模态——拖标题或工具栏空白处移动，窗口始终至少留 8px 在视口内，视口缩放时自动收敛；位置存 `localStorage`（`wecom-picker/window/v1`），下次打开还在原处。标题同时是键盘手柄：`↑/↓/←/→` 微调 16px（按住 `Shift` 为 4px），点击 / 回车 / 空格回到居中
 - **键盘**：`Esc` 关闭、`Enter` 插入、`⌘/Ctrl+F` 聚焦搜索、`↑/↓/Home/End` 行间移动、`Space` 切换选中
 - **数据现实**：CLI 未授权路径时返回占位文本 `无权限查看文件所在路径`，界面会把它当「未知位置」而不是显示出来；在线文档的 `file_size` 不是文件大小（智能文档会报 GB 级数字），只对普通 / 离线文件显示与排序大小
 

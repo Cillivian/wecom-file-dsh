@@ -33,7 +33,12 @@ export const PICKER_STYLE = `.wcp-overlay{position:fixed;inset:0;z-index:2000;di
   background:color-mix(in srgb, var(--dsw-alias-bg-overlay) 78%, transparent);
   backdrop-filter:blur(30px) saturate(180%);
   box-shadow:0 24px 64px -16px rgb(0 0 0 / 42%),0 2px 6px rgb(0 0 0 / 10%),inset 0 1px 0 rgb(255 255 255 / 26%);
+  /* The window is moved by translating it from the overlay's centered rest
+     position, so re-centering and resize correction can ease into place. */
+  transition:transform .18s cubic-bezier(.22,.61,.36,1);
 }
+/* A drag tracks the pointer 1:1: easing it would lag behind the grab point. */
+.wcp-window--dragging{transition:none;will-change:transform}
 .wcp-window,.wcp-window *,.wcp-window *::before,.wcp-window *::after{box-sizing:border-box}
 .wcp-window :focus-visible{outline:2px solid var(--wcp-accent);outline-offset:1px;border-radius:6px}
 .wcp-window .wcp-search input,.wcp-window .wcp-search input:hover,
@@ -42,13 +47,26 @@ export const PICKER_STYLE = `.wcp-overlay{position:fixed;inset:0;z-index:2000;di
 }
 .wcp-window button{font:inherit;color:inherit}
 
-/* Toolbar */
+/* Toolbar: also the window's drag surface, so the grab cursor and the
+   selection lockdown belong here. The search field takes selection back. */
 .wcp-toolbar{
   display:flex;align-items:center;gap:8px;flex:none;padding:8px 10px;
   border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border-l1) 55%, transparent);
   background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 38%, transparent);
+  cursor:grab;touch-action:none;user-select:none;
 }
-.wcp-title{flex:none;font-weight:600;letter-spacing:.01em;padding-inline:2px 4px;white-space:nowrap}
+.wcp-toolbar input{user-select:text}
+/* Two classes, because every chrome control carries its own cursor:pointer. */
+.wcp-window.wcp-window--dragging,.wcp-window.wcp-window--dragging *{cursor:grabbing}
+/* The title is the window's keyboard handle: a button that looks like the
+   title it always was, at a target size that is comfortable to click. Scoped to
+   the window, so the window's own button reset cannot flatten its weight. */
+.wcp-window .wcp-title{
+  display:flex;align-items:center;flex:none;min-height:var(--wcp-h);padding:0 6px;margin:0;
+  border:0;border-radius:7px;background:transparent;color:inherit;
+  font:inherit;font-weight:600;letter-spacing:.01em;white-space:nowrap;cursor:grab;
+}
+.wcp-title:active{cursor:grabbing}
 .wcp-spacer{flex:1 1 auto;min-width:8px}
 .wcp-segmented{
   display:inline-flex;align-items:center;gap:2px;height:var(--wcp-h);box-sizing:border-box;padding:2px;border-radius:9px;
@@ -359,7 +377,7 @@ export const PICKER_STYLE = `.wcp-overlay{position:fixed;inset:0;z-index:2000;di
 @media (max-width:720px){
   .wcp-overlay{padding:12px}
   .wcp-window{width:100%;height:min(620px,88vh);border-radius:14px}
-  .wcp-title{display:none}
+  .wcp-window .wcp-title{display:none}
   .wcp-search{flex:1 1 auto}
   .wcp-col--place{display:none}
 }

@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import type { WecomPickerKey } from '../locales.ts'
+import { WINDOW_HANDLE_PROPS, type WecomWindowChromeProps, type WecomWindowHandleProps } from '../window-drag.ts'
 import {
   SORT_OPTIONS, VIEW_OPTIONS,
   type WecomSortDirection, type WecomSortKey, type WecomViewMode,
@@ -36,12 +37,16 @@ export interface PickerToolbarProps {
   readonly onSortDirection: (direction: WecomSortDirection) => void
   readonly onClose: () => void
   readonly searchRef: RefObject<HTMLInputElement | null>
+  /** Window movement: the toolbar is the drag surface, the title its handle. */
+  readonly chromeProps: WecomWindowChromeProps
+  readonly handleProps: WecomWindowHandleProps
   readonly t: T
 }
 
 /** Unified toolbar. */
 export function PickerToolbar({
-  query, onQuery, view, onView, sortKey, sortDirection, onSortKey, onSortDirection, onClose, searchRef, t,
+  query, onQuery, view, onView, sortKey, sortDirection, onSortKey, onSortDirection, onClose,
+  searchRef, chromeProps, handleProps, t,
 }: PickerToolbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const anchor = useRef<HTMLDivElement>(null)
@@ -70,8 +75,17 @@ export function PickerToolbar({
   const chooseDirection = (direction: WecomSortDirection): void => { onSortDirection(direction) }
 
   return (
-    <div className="wcp-toolbar">
-      <span className="wcp-title">{t('panel.title')}</span>
+    <div className="wcp-toolbar" {...chromeProps}>
+      <button
+        type="button"
+        className="wcp-title"
+        aria-label={t('panel.drag')}
+        title={t('panel.drag')}
+        {...WINDOW_HANDLE_PROPS}
+        {...handleProps}
+      >
+        {t('panel.title')}
+      </button>
       <div className="wcp-segmented" role="group" aria-label={t('view.label')}>
         {VIEW_OPTIONS.map(option => (
           <button

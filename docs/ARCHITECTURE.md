@@ -64,6 +64,16 @@ placement: plusMenu ───▶ ctx.commandUi 贡献「+」菜单一行
 - 客户端 boot 行不携带配置（只有 `id`/`inject`/`immediately`），所以 placement 由宿主 `GET /wecom-picker/config` 提供；读不到时回落 `standalone`。
 - DSH 把「+」菜单的分组成员硬编码在 `ui-commands` 的 `SECTION_ROWS`，插件贡献落在「命令」组；要进「添加」组需要平台侧支持（见 docs/SETUP.md）。
 
+## 窗口：浮动而非固定
+
+弹层是**可移动窗口**，不是钉在屏幕中央的固定模态：
+
+- 拖动面是工具栏（标题 + 空白处）。按下后指针被 capture 到工具栏，所以拖出窗口、甚至拖到 iframe 回退的 `<iframe>` 上都不会断线；查看方式按钮、排序菜单、搜索框各自保留自己的指针手势，按下不会误触拖动。
+- 偏移量是**相对居中位置**的平移（`transform: translate3d`），不是绝对坐标：没拖过的窗口在任何视口都自动居中，拖过的窗口随视口尺寸变化一起收敛。
+- `window-geometry.ts` 的 `clampOffset` 保证窗口至少留 `WINDOW_MARGIN`（8px）在视口内，拖到边界就停住，不可能被丢到屏幕外；视口缩放时在**布局阶段**（`useLayoutEffect`）重新夹一次，不会先画到屏幕外再跳回来。
+- 位置存 `localStorage`（`wecom-picker/window/v1`），下次打开还在原处；存储被禁用或值损坏时退回居中。
+- **键盘等价路径**（WCAG 2.5.7：拖动不能是唯一操作方式）：标题是可聚焦手柄，方向键 16px 微调（`Shift` 4px），点击 / 回车 / 空格回到居中。指针拖动结束后的那次 `click` 会被吞掉，不会被误判成「回到居中」。
+
 ## 宿主路由
 
 | 方法 | 路径 | 说明 |
@@ -102,19 +112,21 @@ src/
   client/                   浏览器半（React）
     index.ts                客户端插件入口：slot / locale / trigger 装配
     PickerButton.tsx        启动按钮 + CLI/iframe 模式路由 + chip 插入
+    window-drag.ts          窗口拖动：指针拖动 / 键盘微调 / 视口夹取 / 位置持久化
+    window-geometry.ts      纯几何：偏移上限、夹取、拖动位移、位置读写
     chips.ts                WeDrive chip 序列化与插入
     locales.ts              zh / en 文案
     glass.ts                唯一样式表（毛玻璃材质、布局、主题 token）
     cli/                    CLI 选择器
-      CliPicker.tsx         弹层状态机：加载 / 选择 / 偏好 / 键盘 / 状态栏
-      Toolbar.tsx           统一工具栏：查看方式 / 排序菜单 / 搜索 / 关闭
+      CliPicker.tsx         弹层状态机：加载 / 选择 / 偏好 / 键盘 / 窗口拖动 / 状态栏
+      Toolbar.tsx           统一工具栏：标题手柄 / 查看方式 / 排序菜单 / 搜索 / 关闭
       Views.tsx             列表 / 分栏 / 画廊 / 简介面板
       States.tsx            加载 / 空 / 未授权（含二维码）/ 错误 / 回退入口
       model.ts              纯逻辑：排序、分栏分组、格式化、图标键、偏好持久化
       scroll.ts             滚动加载更多（IntersectionObserver 哨兵）
       api.ts                宿主路由的浏览器侧调用
     iframe/                 官方选择器回退
-      IframePicker.tsx      弹层与 postMessage 生命周期
+      IframePicker.tsx      弹层与 postMessage 生命周期（同一套窗口拖动）
       selector.ts           选择器 URL / origin / 响应解析
     assets/                 内置资源（均不依赖 npm 包）
       WedriveIcon.tsx       启动按钮图标
