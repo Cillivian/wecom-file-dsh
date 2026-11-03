@@ -43,6 +43,7 @@
 - **默认 CLI**：`wecom-cli` 不需要浏览器会话，桌面版与浏览器一致可用。
 - **自动回退**：宿主报 `state: 'missing'`（机器上没有 CLI）时，`CliPicker` 直接调 `onUseIframe(true)`，不展示死路页面。
 - **手动回退**：`unauthorized`（授权过期）与 `error` 状态提供「改用官方选择器」；`missing` 时该按钮不出现，避免「回退 → 没有 CLI → 又回退」的循环。
+- **授权失败可重来**：`unauthorized` 直接展示二维码；登录尝试失败、或二维码已过期时，同一处「重新授权」/「重新获取二维码」会重开一次 CLI 登录。`POST /auth/start?restart=1` 负责先终止正在等待扫码的进程再起新的（二维码不能原地刷新）；`error` 状态也保留「重新授权」入口，因为授权失败可能被归为普通错误。
 - **关闭即复位**：`PickerButton.close()` 把模式重置为 `cli`，下次打开仍优先 CLI。
 - 结果通道统一：`IframePicker` 校验 `event.origin === https://doc.weixin.qq.com` 后解析 `parseWecomSelectorMessage`，与 CLI 选择器输出同一种 `WecomSelectedFile`，chip 插入只有一条路径（`chips.ts`）。
 
@@ -81,7 +82,7 @@ placement: plusMenu ───▶ ctx.commandUi 贡献「+」菜单一行
 | GET | `/wecom-picker/config` | 入口位置（`placement`），不触碰 CLI |
 | GET | `/wecom-picker/status` | 授权状态、`wecom-cli` 版本、当前登录尝试（含授权链接） |
 | GET | `/wecom-picker/files?q=&cursor=&limit=` | `q` 空 → `disk files list`（最近浏览）；否则 `disk files search`；`limit` 上限 100 |
-| POST | `/wecom-picker/auth/start` | 启动 `wecom-cli auth init --noninteractive --no-browser --output-qrcode qr.png` |
+| POST | `/wecom-picker/auth/start` | 启动 `wecom-cli auth init --noninteractive --no-browser --output-qrcode qr.png`；`?restart=1` 先结束正在等待的登录再起新的 |
 | GET | `/wecom-picker/auth/qr.png` | 上述登录尝试写出的二维码 |
 
 失败统一 `{ ok: false, state: 'missing' | 'unauthorized' | 'error', message }`；`missing` 用 HTTP 503，其余 200（业务性失败）。所有路由先过 `connection.requestRejection` 的 Host/Origin 围栏。
@@ -93,7 +94,8 @@ placement: plusMenu ───▶ ctx.commandUi 贡献「+」菜单一行
 - 通过 `ctx.subprocess` 缝执行 CLI（不直接 `child_process`），因此进程生命周期、超时、终止都由 DSH 托管；
 - argv 为固定数组（`['disk','files','list','--json', JSON.stringify(body)]`），**不经过 shell**，用户输入只出现在 JSON 参数里；
 - stdout/stderr 有内存上限（2 MiB / 64 KiB）与单次调用超时；
-- 状态目录固定为 `$DSH_HOME/storages/wecom-picker/`，只有二维码图片写在那里，文件名是常量 `qr.png`。
+- 状态目录固定为 `$DSH_HOME/storages/wecom-picker/`，只有二维码图片写在那里，文件名是常量 `qr.png`；
+- 同一时间只保留一次登录尝试：普通 `startAuth` 复用等待中的那次，`restart` 会先终止旧进程；插件卸载时同样会终止它，不让等待扫码的进程留在机器上。
 
 `src/host/routes.ts` 是唯一的 HTTP 面：方法校验、围栏、请求解析、错误分类。
 
@@ -121,7 +123,8 @@ src/
       CliPicker.tsx         弹层状态机：加载 / 选择 / 偏好 / 键盘 / 窗口拖动 / 状态栏
       Toolbar.tsx           统一工具栏：标题手柄 / 查看方式 / 排序菜单 / 搜索 / 关闭
       Views.tsx             列表 / 分栏 / 画廊 / 简介面板
-      States.tsx            加载 / 空 / 未授权（含二维码）/ 错误 / 回退入口
+      States.tsx            加载 / 空 / 未授权（含二维码 / 重新授权）/ 错误 / 回退入口
+      auth.ts               纯逻辑：授权失败后展示哪些动作、何时轮询
       model.ts              纯逻辑：排序、分栏分组、格式化、图标键、偏好持久化
       scroll.ts             滚动加载更多（IntersectionObserver 哨兵）
       api.ts                宿主路由的浏览器侧调用

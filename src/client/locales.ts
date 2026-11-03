@@ -81,6 +81,7 @@ export const zh = {
 
   // Authorization
   'auth.action': '重新授权',
+  'auth.restart': '重新获取二维码',
   'auth.waiting': '用企业微信扫码授权',
   'auth.link': '或在浏览器中打开授权页',
   'auth.failed': '授权失败',
@@ -177,6 +178,7 @@ export const en: Record<WecomPickerKey, string> = {
   'state.errorHint': 'Check the network or the CLI, then retry.',
 
   'auth.action': 'Re-authorize',
+  'auth.restart': 'Get a new QR code',
   'auth.waiting': 'Scan this QR code in WeCom',
   'auth.link': 'Or open the authorization page',
   'auth.failed': 'Authorization failed',

@@ -1,14 +1,14 @@
 /** Browser-side calls into the Host picker routes (document-relative by convention). */
 import {
   PICKER_AUTH_QR_ROUTE, PICKER_AUTH_START_ROUTE, PICKER_FILES_ROUTE, PICKER_STATUS_ROUTE,
-  type PickerAuthState, type PickerFilesResponse, type PickerStatusPayload,
+  type PickerAuthState, type PickerFailurePayload, type PickerFilesResponse, type PickerStatusPayload,
 } from '../../shared/protocol.ts'
 
 /** One page of entries per request. */
 const PAGE_SIZE = 30
 
 /** A refusal the host classified, which the caller decides what to do with. */
-function isRefusal(payload: unknown): boolean {
+function isRefusal(payload: unknown): payload is PickerFailurePayload {
   return typeof payload === 'object' && payload !== null && 'state' in payload
 }
 
@@ -49,9 +49,28 @@ export function fetchPickerFiles(
   return requestJson<PickerFilesResponse>(`${PICKER_FILES_ROUTE}?${search.toString()}`, { method: 'GET' }, params.signal)
 }
 
-/** Start one `wecom-cli auth init` QR login on the host. */
-export function startPickerAuth(signal?: AbortSignal): Promise<PickerAuthState> {
-  return requestJson<PickerAuthState>(PICKER_AUTH_START_ROUTE, { method: 'POST' }, signal)
+/**
+ * Start one `wecom-cli auth init` QR login on the host.
+ *
+ * `restart` retires a running attempt first; that is the only way back from a
+ * QR code that expired or whose scan failed without a distinct failure state.
+ * A classified refusal (the host could not spawn the CLI at all) is thrown, so
+ * the panel can show why instead of leaving an inert "重新授权" button.
+ * @param signal - aborts the request.
+ * @param options - `restart` forces a new login attempt.
+ */
+export async function startPickerAuth(
+  signal?: AbortSignal,
+  options?: { readonly restart?: boolean },
+): Promise<PickerAuthState> {
+  const query = options?.restart === true ? '?restart=1' : ''
+  const payload = await requestJson<PickerAuthState | PickerFailurePayload>(
+    `${PICKER_AUTH_START_ROUTE}${query}`,
+    { method: 'POST' },
+    signal,
+  )
+  if (isRefusal(payload)) throw new Error(payload.message)
+  return payload
 }
 
 /** Cache-busted QR image reference for the running login attempt. */

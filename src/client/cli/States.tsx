@@ -6,6 +6,7 @@
 import type { PickerAuthState, PickerBlockCode } from '../../shared/protocol.ts'
 import type { WecomPickerKey } from '../locales.ts'
 import { pickerAuthQrUrl } from './api.ts'
+import { authPanel } from './auth.ts'
 
 /** Locale lookup owned by the window. */
 type T = (key: WecomPickerKey) => string
@@ -49,10 +50,12 @@ export function BlockedView({
   readonly qrStamp: number
   readonly t: T
   readonly onRetry: () => void
-  readonly onAuthorize: () => void
+  /** Start a fresh login; `restart` retires the attempt whose QR is on screen. */
+  readonly onAuthorize: (restart: boolean) => void
   /** Switch to the official selector; absent once the CLI is known to be missing. */
   readonly onUseIframe: () => void
 }) {
+  const panel = authPanel(block.code, auth)
   const title = block.code === 'missing'
     ? t('state.missing')
     : block.code === 'unauthorized' ? t('state.unauthorized') : t('state.error')
@@ -65,43 +68,41 @@ export function BlockedView({
       <div className="wcp-state__title">{title}</div>
       <p className="wcp-state__hint">{hint}</p>
       <code className="wcp-state__detail">{block.message}</code>
-      {block.code !== 'unauthorized'
+      {panel.failure === undefined
+        ? null
+        : (
+          <p className="wcp-state__hint wcp-state__title">
+            {panel.failure === '' ? t('auth.failed') : `${t('auth.failed')}：${panel.failure}`}
+          </p>
+        )}
+      {panel.qr
         ? (
-          <div className="wcp-state__actions">
-            <button type="button" className="wcp-btn" onClick={onRetry}>{t('panel.retry')}</button>
-            <button type="button" className="wcp-btn wcp-btn--quiet" onClick={onUseIframe}>{t('cli.useIframe')}</button>
+          <div className="wcp-state__qr">
+            <img className="wcp-qr" src={pickerAuthQrUrl(qrStamp)} alt={t('auth.waiting')} width={190} height={190} />
+            <span className="wcp-state__hint">{t('auth.waiting')}</span>
           </div>
         )
-        : auth.phase === 'waiting'
+        : null}
+      {auth.link === undefined
+        ? null
+        : <a className="wcp-link" href={auth.link} target="_blank" rel="noreferrer">{t('auth.link')}</a>}
+      <div className="wcp-state__actions">
+        {panel.retry
+          ? <button type="button" className="wcp-btn" onClick={onRetry}>{t('panel.retry')}</button>
+          : null}
+        {panel.reauthorize
           ? (
-            <div className="wcp-state__qr">
-              <img className="wcp-qr" src={pickerAuthQrUrl(qrStamp)} alt={t('auth.waiting')} width={190} height={190} />
-              <span className="wcp-state__hint">{t('auth.waiting')}</span>
-              {auth.link === undefined
-                ? null
-                : <a className="wcp-link" href={auth.link} target="_blank" rel="noreferrer">{t('auth.link')}</a>}
-            </div>
+            <button
+              type="button"
+              className={block.code === 'unauthorized' && !panel.qr ? 'wcp-btn wcp-btn--primary' : 'wcp-btn wcp-btn--quiet'}
+              onClick={() => { onAuthorize(panel.qr) }}
+            >
+              {panel.qr ? t('auth.restart') : t('auth.action')}
+            </button>
           )
-          : (
-            <>
-              {auth.phase === 'failed'
-                ? (
-                  <p className="wcp-state__hint wcp-state__title">
-                    {`${t('auth.failed')}：${auth.message ?? ''}`}
-                  </p>
-                )
-                : null}
-              <div className="wcp-state__actions">
-                <button type="button" className="wcp-btn wcp-btn--primary" onClick={onAuthorize}>
-                  {t('auth.action')}
-                </button>
-                <button type="button" className="wcp-btn wcp-btn--quiet" onClick={onUseIframe}>{t('cli.useIframe')}</button>
-              </div>
-              {auth.link === undefined
-                ? null
-                : <a className="wcp-link" href={auth.link} target="_blank" rel="noreferrer">{t('auth.link')}</a>}
-            </>
-          )}
+          : null}
+        <button type="button" className="wcp-btn wcp-btn--quiet" onClick={onUseIframe}>{t('cli.useIframe')}</button>
+      </div>
     </div>
   )
 }

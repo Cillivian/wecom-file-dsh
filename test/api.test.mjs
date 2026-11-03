@@ -81,3 +81,21 @@ test('auth start and the QR reference use their own routes', async () => {
   assert.equal(started.calls[0].init.method, 'POST')
   assert.equal(pickerAuthQrUrl(7), 'wecom-picker/auth/qr.png?t=7')
 })
+
+test('a restarted login asks the host to retire the running attempt', async () => {
+  const restarted = await withFetch(
+    () => reply(200, { phase: 'waiting' }),
+    () => startPickerAuth(undefined, { restart: true }),
+  )
+  assert.equal(restarted.calls[0].url, 'wecom-picker/auth/start?restart=1')
+})
+
+test('a refused auth start is thrown, so the panel can show why', async () => {
+  // The host answers a classified refusal with HTTP 200 *and* a body; treating
+  // it as an auth phase would leave "重新授权" looking inert.
+  const refusal = { ok: false, state: 'error', message: 'wecom-cli auth init 启动失败：EACCES' }
+  await assert.rejects(
+    withFetch(() => reply(200, refusal), () => startPickerAuth(undefined)).then(r => r.result),
+    /EACCES/,
+  )
+})

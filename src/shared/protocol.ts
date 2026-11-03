@@ -22,7 +22,12 @@ export const PICKER_FILES_PATH = '/wecom-picker/files'
 /** Browser-relative form of {@link PICKER_FILES_PATH}. */
 export const PICKER_FILES_ROUTE = PICKER_FILES_PATH.slice(1)
 
-/** POST: start one `wecom-cli auth init` QR login, waiting for a scan. */
+/**
+ * POST: start one `wecom-cli auth init` QR login, waiting for a scan.
+ * `?restart=1` retires a running attempt and starts a fresh login — a QR code
+ * cannot be refreshed in place, so an expired code is only recoverable that
+ * way.
+ */
 export const PICKER_AUTH_START_PATH = '/wecom-picker/auth/start'
 
 /** Browser-relative form of {@link PICKER_AUTH_START_PATH}. */

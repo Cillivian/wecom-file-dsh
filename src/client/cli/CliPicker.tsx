@@ -15,6 +15,7 @@ import {
   type WecomSortDirection, type WecomSortKey, type WecomViewMode, type WecomViewPreferences,
 } from './model.ts'
 import { fetchPickerFiles, fetchPickerStatus, startPickerAuth } from './api.ts'
+import { pollsAuth } from './auth.ts'
 import { BlockedView, EmptyState, LoadingRows } from './States.tsx'
 import { PickerToolbar } from './Toolbar.tsx'
 import { ColumnsView, GalleryView, ListView } from './Views.tsx'
@@ -32,8 +33,9 @@ interface Block {
 /** Poll cadence while the CLI waits for a scan. */
 const AUTH_POLL_MS = 2_500
 
-/** QR refresh cadence; an expired code must not stay on screen. */
-const QR_REFRESH_MS = 15_000
+/** QR refresh cadence; an expired code must not stay on screen, and a restarted
+ * login may not have written its image yet when the URL is first requested. */
+const QR_REFRESH_MS = 5_000
 
 /** Search debounce, so typing does not spawn one CLI call per keystroke. */
 const SEARCH_DEBOUNCE_MS = 250
@@ -138,8 +140,9 @@ export function PickerWindow({ onConfirm, onClose, onUseIframe, t }: PickerWindo
   }, [query, refresh])
 
   // While the CLI waits for a scan, poll for the authorization it produces.
+  const polling = pollsAuth(block?.code, auth)
   useEffect(() => {
-    if (block?.code !== 'unauthorized' || auth.phase !== 'waiting') return
+    if (!polling) return
     const controller = new AbortController()
     const timer = setInterval(() => {
       void fetchPickerStatus(controller.signal).then((status) => {
@@ -156,7 +159,7 @@ export function PickerWindow({ onConfirm, onClose, onUseIframe, t }: PickerWindo
       }).catch(() => undefined)
     }, AUTH_POLL_MS)
     return () => { clearInterval(timer); controller.abort() }
-  }, [block?.code, auth.phase, refresh])
+  }, [polling, refresh])
 
   useEffect(() => {
     if (auth.phase !== 'waiting') return
@@ -225,11 +228,16 @@ export function PickerWindow({ onConfirm, onClose, onUseIframe, t }: PickerWindo
   /** Stable callback handed to the views' paging sentinels. */
   const requestMore = useCallback(() => { void loadMore() }, [loadMore])
 
-  const beginAuth = useCallback(async () => {
+  /**
+   * Start a QR login. `restart` retires the attempt whose QR is on screen, so
+   * an expired code or a failed scan is recoverable with the same click.
+   */
+  const beginAuth = useCallback(async (restart = false) => {
     setAuth({ phase: 'waiting' })
+    // Always bump: a new attempt rewrites (or removes) the QR image.
     setQrStamp(stamp => stamp + 1)
     try {
-      setAuth(await startPickerAuth())
+      setAuth(await startPickerAuth(undefined, { restart }))
     } catch (error) {
       setAuth({ phase: 'failed', message: error instanceof Error ? error.message : String(error) })
     }
@@ -297,7 +305,7 @@ export function PickerWindow({ onConfirm, onClose, onUseIframe, t }: PickerWindo
         qrStamp={qrStamp}
         t={t}
         onRetry={() => { setBlock(undefined); void refresh(new AbortController().signal) }}
-        onAuthorize={() => { void beginAuth() }}
+        onAuthorize={(restart) => { void beginAuth(restart) }}
         onUseIframe={() => { onUseIframe(false) }}
       />
     )

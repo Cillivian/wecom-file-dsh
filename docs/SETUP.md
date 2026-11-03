@@ -145,6 +145,7 @@ node --run bundle    # 重建 lib/client.js（等价于 pnpm bundle）
 | --- | --- |
 | 弹层提示「未找到 wecom-cli」 | 宿主进程 PATH 里没有它；`which wecom-cli` 确认，或用绝对路径加进 PATH 后重启应用 |
 | 提示「企业微信授权已失效」/ `errcode 853004` | 点弹层里的「重新授权」扫码，或 `wecom-cli auth init --noninteractive` |
+| 弹层显示「授权失败」或二维码一直不动 | 点「重新授权」/「重新获取二维码」重开一次登录（会先结束上一次等待扫码的进程），或 `wecom-cli auth init --noninteractive` |
 | 点开就跳外部浏览器 | 走的是官方登录流程：桌面版请留在 CLI 模式；浏览器确认同站代理已生效 |
 | 列表空白但 CLI 正常 | 该机器人没有「最近浏览」记录；用搜索框按关键词找，或先在微盘里打开一次文件 |
 | 客户端插件加载失败、`web boot: … did not activate` | 产物里出现了非平台的 `require()`；重跑 `pnpm bundle`，不要引入需要运行时解析的 npm 包 |

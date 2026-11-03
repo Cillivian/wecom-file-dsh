@@ -213,6 +213,25 @@ test('disposal removes every route', () => {
   assert.equal(s.webServer.handlers.size, 0)
 })
 
+test('the auth start route forwards the restart flag to the host', async () => {
+  const webServer = fakeWebServer()
+  const calls = []
+  const host = {
+    startAuth: async (options) => {
+      calls.push(options)
+      return { phase: 'waiting' }
+    },
+  }
+  applyPickerRoutes(
+    { get: name => (name === 'webServer' ? webServer : { requestRejection: () => undefined }), logger: { warn: () => undefined } },
+    host,
+    { placement: 'standalone' },
+  )
+  await hit({ webServer }, '/wecom-picker/auth/start', { method: 'POST', url: '/wecom-picker/auth/start?restart=1' })
+  await hit({ webServer }, '/wecom-picker/auth/start', { method: 'POST' })
+  assert.deepEqual(calls, [{ restart: true }, { restart: false }])
+})
+
 test('the CLI is invoked with a fixed argv array, never a shell', async () => {
   const s = surface({ handler: () => ({ stdout: LIST_PAYLOAD }) })
   await hit(s, '/wecom-picker/files', { url: '/wecom-picker/files?q=%22%3B%20rm%20-rf%20%2F' })

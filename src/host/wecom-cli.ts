@@ -152,6 +152,29 @@ function firstJson(stdout: string): Record<string, unknown> | undefined {
 }
 
 /**
+ * Business error codes that mean the bot must authorize again: an expired CLI
+ * token, a missing or invalid access token, or an invalid credential.
+ */
+const AUTH_ERROR_CODES: ReadonlySet<number> = new Set([
+  853004, // cli token expired
+  40001, // invalid credential (access token)
+  40014, // invalid access token
+  42001, // access token expired
+])
+
+/**
+ * Textual signatures of an authorization failure.
+ *
+ * The CLI wraps different layers, so the same failure can reach us as a
+ * framework error (`AuthError: …`), a bare transport note (`endpoint requires
+ * auth but no token available`) or a localized instruction (`请先运行
+ * wecom-cli auth init 登录`). All of them are resolvable by the same QR login,
+ * and a miss here would leave the panel with a dead end instead of a
+ * re-authorize button.
+ */
+const AUTH_ERROR_TEXT = /token\s*expired|invalid\s*token|autherror|requires?\s+auth|no\s+token|not\s+authori[sz]ed|unauthorized|credential|授权|未授权|登录|扫码|auth\s+init/iu
+
+/**
  * Normalize the failure envelope shared by the CLI's framework and business
  * layers, so an expired bot token surfaces as "re-authorize" rather than a raw
  * dump.
@@ -162,7 +185,7 @@ function failureOf(payload: Record<string, unknown> | undefined, stderr: string,
   const code = integer(payload?.errcode) ?? integer(nested?.code)
   const message = text(payload?.errmsg) ?? text(nested?.message) ?? text(stderr)
     ?? `${CLI_NAME} exited with ${String(exitCode)} and no JSON payload`
-  if (code === 853004 || /token\s*expired|授权|未授权|unauthorized|invalid\s*token/iu.test(message)) {
+  if ((code !== undefined && AUTH_ERROR_CODES.has(code)) || AUTH_ERROR_TEXT.test(message)) {
     return new PickerError('unauthorized', message)
   }
   return new PickerError('error', message)
@@ -222,6 +245,7 @@ export class WecomPickerHost {
   private binary: Promise<string> | undefined
   private version: string | undefined
   private attempt: AuthAttempt | undefined
+  private disposed = false
   private readonly subprocess: PickerSubprocess
   private readonly logger: { warn(value: unknown): void }
 
@@ -346,6 +370,24 @@ export class WecomPickerHost {
     })
   }
 
+  /**
+   * Retire the current attempt: stop reporting it and make sure no login
+   * process outlives it. A settled attempt is only forgotten; a running one is
+   * terminated, so its late exit cannot flip a newer attempt's state.
+   */
+  private dropAttempt(): void {
+    const attempt = this.attempt
+    this.attempt = undefined
+    if (attempt === undefined) return
+    clearTimeout(attempt.timer)
+    if (attempt.exitCode !== undefined) return
+    try {
+      attempt.handle.terminate()
+    } catch (error) {
+      this.logger.warn(error)
+    }
+  }
+
   /** GET `/wecom-picker/status`. */
   async status(): Promise<PickerStatusPayload> {
     const auth = this.attemptState()
@@ -358,9 +400,7 @@ export class WecomPickerHost {
       if (auth.phase === 'failed') return { state: 'unauthorized', ...described, auth }
       const { authorized, detail } = await this.authorization()
       if (authorized) {
-        const settled = this.attempt
-        this.attempt = undefined
-        if (settled !== undefined) clearTimeout(settled.timer)
+        this.dropAttempt()
         return { state: 'authorized', ...described, auth: { phase: 'idle' } }
       }
       return {
@@ -400,10 +440,23 @@ export class WecomPickerHost {
     }
   }
 
-  /** POST `/wecom-picker/auth/start`: begin one QR login and wait in the background. */
-  async startAuth(): Promise<PickerAuthState> {
-    const current = this.attemptState()
-    if (current.phase === 'waiting') return current
+  /**
+   * POST `/wecom-picker/auth/start`: begin one QR login and wait in the
+   * background.
+   *
+   * Without `restart` a running attempt is reused, so a repeated request cannot
+   * spawn a second login process for the QR already on screen. With `restart`
+   * the running attempt is retired first: a QR code cannot be refreshed in
+   * place, so an expired code (or one whose scan failed without settling) can
+   * only be recovered by starting a new login.
+   */
+  async startAuth(options: { readonly restart?: boolean } = {}): Promise<PickerAuthState> {
+    if (this.disposed) throw new PickerError('error', '选择器已卸载，无法开始登录')
+    if (options.restart !== true) {
+      const current = this.attemptState()
+      if (current.phase === 'waiting') return current
+    }
+    this.dropAttempt()
     const binary = await this.executable()
     const directory = stateDirectory()
     await mkdir(directory, { recursive: true })
@@ -430,6 +483,12 @@ export class WecomPickerHost {
     const attempt: AuthAttempt = { handle, timer, offset: 0 }
     this.attempt = attempt
     this.watchAttempt(attempt)
+    // Disposal may have happened while the process was being spawned; a login
+    // that nobody can observe must not keep waiting for a scan for ten minutes.
+    if (this.disposed) {
+      this.dropAttempt()
+      throw new PickerError('error', '选择器已卸载，登录尝试已结束')
+    }
     return { phase: 'waiting' }
   }
 
@@ -446,6 +505,12 @@ export class WecomPickerHost {
       // No QR yet (or a login attempt never wrote one): the browser retries.
       return undefined
     }
+  }
+
+  /** Retire the running login attempt; the composition calls this on disposal. */
+  dispose(): void {
+    this.disposed = true
+    this.dropAttempt()
   }
 }
 

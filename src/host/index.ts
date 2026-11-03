@@ -58,7 +58,12 @@ export function apply(ctx: Context, config?: Config) {
     )
     const placement = config?.placement ?? 'standalone'
     scope.effect(
-      () => applyPickerRoutes(scope, host, { placement }),
+      () => {
+        const disposeRoutes = applyPickerRoutes(scope, host, { placement })
+        // A login attempt may outlive the page (its process waits for a scan
+        // for minutes); the composition's disposal is what ends it.
+        return () => { disposeRoutes(); host.dispose() }
+      },
       'wecom-picker: picker routes',
     )
   })

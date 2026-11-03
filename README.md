@@ -24,7 +24,7 @@ flowchart LR
 - 弹层是 macOS 26 Finder 风格的毛玻璃窗口：统一工具栏 + 分段查看方式 + 排序菜单 + 搜索框 + 状态栏
 - 窗口可拖动（拖标题或工具栏空白处），位置会被记住；标题也是键盘手柄，方向键微调、点击回到居中
 - 三种查看方式、五个排序字段（升降序）、实时搜索、滚动加载更多、多选（最多 10 项）
-- 授权失效时弹层内直接展示 `wecom-cli` 的扫码二维码
+- 授权失效时弹层内直接展示 `wecom-cli` 的扫码二维码；登录失败或二维码过期后，同一处的「重新授权」/「重新获取二维码」可重开一次登录（先结束上一次等待扫码的进程）
 - 运行时技能 `wecom-wedrive-ref`（chip → `wecomcli-*` 路由）与 `wecom-wedrive-picker-setup`（安装 / 配置 / 排查）
 - 两个 profile 都能装：桌面版（`dsh-app://app`）与 `dsh web`（`http://127.0.0.1:<port>`）
 
@@ -126,7 +126,7 @@ Chip 的 id 来源（`wecom-cli disk files list/search` 字段）：在线文档
 | --- | --- |
 | `GET /wecom-picker/status` | 授权状态、`wecom-cli` 版本、当前登录尝试（含授权链接） |
 | `GET /wecom-picker/files?q=&cursor=&limit=` | `q` 为空走 `disk files list`（最近浏览），否则走 `disk files search`；`limit` 上限 100 |
-| `POST /wecom-picker/auth/start` | 启动一次 `wecom-cli auth init --noninteractive --no-browser --output-qrcode qr.png` |
+| `POST /wecom-picker/auth/start` | 启动一次 `wecom-cli auth init --noninteractive --no-browser --output-qrcode qr.png`；`?restart=1` 会先结束正在等待扫码的登录再重新开始（二维码不能原地刷新） |
 | `GET /wecom-picker/auth/qr.png` | 上述登录尝试写出的二维码图片 |
 
 失败统一 `{ ok: false, state: 'missing' | 'unauthorized' | 'error', message }`；`missing` 用 503，其余 200。

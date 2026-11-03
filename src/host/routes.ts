@@ -135,7 +135,10 @@ export function applyPickerRoutes(
       path: PICKER_AUTH_START_PATH,
       handler: async (req, res) => {
         if (fenceOff(ctx, req, res) || method(req, res, 'POST')) return
-        await json(res, () => host.startAuth())
+        // `restart=1` retires a running attempt before starting a new one; the
+        // browser uses it to click through an expired QR code.
+        const restart = queryParam(req.url ?? '/', 'restart') === '1'
+        await json(res, () => host.startAuth({ restart }))
       },
     }),
     webServer.register({

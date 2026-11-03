@@ -28,7 +28,7 @@ wecom-cli auth init --noninteractive   # 未授权时执行，用企业微信扫
 
 - 版本低或未安装 → \`npm install -g @wecom/cli\`（内网 registry 见 \`wecomcli-shared\` 技能）。
 - \`auth show --status\` 输出 \`authorized\` **不代表 token 未过期**：运行时返回 \`errcode 853004\` 才算过期，此时重新 \`auth init\`。
-- 插件里也能重新授权：选择器弹层会直接显示二维码。CLI 的授权文件在宿主进程的 \`$DSH_HOME/storages/wecom-picker/\` 之外，插件只往该目录写二维码图片。
+- 插件里也能重新授权：授权失效或授权失败时，选择器弹层会直接显示二维码，并可点「重新授权」/「重新获取二维码」重开一次登录（会先结束上一次等待扫码的进程）。CLI 的授权文件在宿主进程的 \`$DSH_HOME/storages/wecom-picker/\` 之外，插件只往该目录写二维码图片。
 
 ## 二、安装插件（按运行方式二选一）
 
@@ -68,6 +68,7 @@ dsh web --patch /abs/path/to/wecom-file-dsh/cordis.yml --no-open
 | --- | --- |
 | 弹层显示「未找到 wecom-cli」 | \`which wecom-cli\`；宿主进程 PATH 是否含 nvm/homebrew bin |
 | 显示「授权已失效」/ \`errcode 853004\` | 点弹层里的「重新授权」扫码，或 \`wecom-cli auth init --noninteractive\` |
+| 显示「授权失败」/ 二维码一直不动 | 点「重新授权」/「重新获取二维码」重开一次登录，或 \`wecom-cli auth init --noninteractive\` |
 | 点开直接跳外部浏览器 | 说明走的是登录流程：桌面版请改用 CLI 模式；浏览器请确认同站代理已生效 |
 | 列表空但 CLI 正常 | 该机器人没有「最近浏览」记录；用搜索框按关键词找，或先在微盘里打开一次文件 |
 | iframe 里点不动 / 结果不回来 | 检查 \`postMessage\` origin 是否为 \`https://doc.weixin.qq.com\`，以及页面是否被浏览器拦截第三方 iframe |
