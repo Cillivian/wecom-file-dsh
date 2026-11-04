@@ -162,10 +162,10 @@ node --run bundle    # 重建 lib/client.js（产物入库，改动后必须一�
 
 ## 许可与第三方
 
-本仓库当前 **UNLICENSED**（内部使用，`private: true`）。对外开源前需要所有者决定：
+本仓库源代码以 **MIT** 许可发布，见 [LICENSE](LICENSE)（`package.json` 同步声明 `"license": "MIT"`）。
 
-1. 选一个 SPDX 许可证并加 `LICENSE`，同时把 `private` 改成 `false`、补 `repository`；
-2. 确认内置的腾讯文档文件类型图标可以再分发（上游包**未声明许可证**），或替换为自绘图标 —— 见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)；
-3. 说明 `wecom-cli` 与 `@deepseek-ai/*` 的获取方式（均为内部资源，外部无法构建）。
+`LICENSE` 只覆盖本仓库自有代码。内置的腾讯文档文件类型图标与启动按钮图标取自腾讯内部包（上游**未声明许可证**），仍按内部资源共享处理、**不在** MIT 许可范围内，对外分发前需资源所有者确认 —— 详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+
+`wecom-cli` 与 `@deepseek-ai/*` 均为内部资源，外部环境无法完整构建；`peerDependencies` 由运行中的 DeepSeek Harness 提供。
 
 安全策略见 [SECURITY.md](SECURITY.md)，参与开发见 [CONTRIBUTING.md](CONTRIBUTING.md)。

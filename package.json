@@ -1,10 +1,14 @@
 {
   "name": "wecom-dsh-plugins",
   "version": "0.0.0",
-  "private": true,
+  "private": false,
   "type": "module",
   "description": "DeepSeek Harness plugin: a WeCom WeDrive picker on the composer that inserts @ chips, backed by wecom-cli with the official selector as fallback.",
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Cillivian/wecom-file-dsh.git"
+  },
   "keywords": [
     "dsh",
     "dsh-plugin",
