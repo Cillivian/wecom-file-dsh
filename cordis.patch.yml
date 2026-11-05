@@ -2,8 +2,9 @@
 #
 # One package carries both halves: this layer inserts the single Loader row named
 # `wecom-dsh-plugins`. The row resolves the package's host half
-# (`exports["."]` -> `src/host/index.ts`, loaded through Node's built-in
-# TypeScript type stripping), and the package's `dsh.client` declaration puts the
+# (`exports["."]` -> `lib/host/index.js`, the committed transpile of
+# `src/host/index.ts`: Node refuses to strip types for files under a profile's
+# `node_modules`), and the package's `dsh.client` declaration puts the
 # browser half (`exports["./client"]` -> `lib/client.js`) into the client boot
 # graph.
 #

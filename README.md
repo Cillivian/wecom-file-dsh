@@ -42,11 +42,14 @@ wecom-cli auth show --status        # 期望 authorized；否则 wecom-cli auth 
 
 # 2. 装进目标 profile（desktop 或 web，按需替换）
 cd "${DSH_HOME:-$HOME/.dsh}/profiles/desktop"
-pnpm add wecom-dsh-plugins@link:/abs/path/to/wecom-file-dsh
+pnpm add wecom-dsh-plugins@github:Cillivian/wecom-file-dsh
+# 本机改代码时改用软链：pnpm add wecom-dsh-plugins@link:/abs/path/to/wecom-file-dsh
 # 再把 "wecom-dsh-plugins" 加进 package.json 的 dsh.profile.bundles
 
 # 3. 重启应用 / 重开 dsh web
 ```
+
+`lib/` 里的产物（`lib/host/*.js`、`lib/shared/*.js`、`lib/client.js`）都已入库，从 GitHub 装不需要任何构建步骤。
 
 细节、Web profile、同站代理与故障排查见 [docs/SETUP.md](docs/SETUP.md)。
 
@@ -134,13 +137,16 @@ Chip 的 id 来源（`wecom-cli disk files list/search` 字段）：在线文档
 ## 开发
 
 ```bash
-node --run test      # 零依赖测试（node:test）：模型纯逻辑 + 宿主路由，离线可跑
-node --run bundle    # 重建 lib/client.js（产物入库，改动后必须一起提交）
+node --run test        # 零依赖测试（node:test）：模型纯逻辑 + 宿主路由，离线可跑
+node --run build:host  # 重建 lib/host 与 lib/shared（宿主半源码改动后；产物入库）
+node --run bundle      # 重建 lib/client.js（客户端源码改动后；产物入库）
+node --run build       # 两者都跑
 ```
 
+- `tools/build-host.mjs` 逐文件转译宿主半（`stripTypeScriptTypes` + 相对 `.ts` import 改写），不打包、不查类型；`test/build-artifacts.test.mjs` 会在产物与源码不一致时失败，所以改完宿主半必须重跑并提交 `lib/`
 - `tools/bundle.mjs` 自动定位 tsdown（`$DSH_TSUDOWN` → `$DSH_CHECKOUT` → 附近 checkout → PATH）
 - 客户端产物**不要**引入需要运行时 `require()` 的 npm 包：client module table 只 materialize 平台模块，构建期解析不到的依赖会退化成运行时 `require`，表现为 `web boot: … did not activate`
-- 宿主半由 Node 类型擦除直接加载 `src/host/*.ts`：**禁止**需要转译的语法（`enum`、参数属性 `constructor(private x)`、`namespace`）
+- 宿主半只用可擦除语法（`interface` / `type` / `as` / 泛型）：**禁止**需要转译的语法（`enum`、参数属性 `constructor(private x)`、`namespace`）；`exports["."]` 指向转译后的 `lib/host/index.js`，因为包在 profile 的 `node_modules` 里，Node 不允许在那里擦除类型（`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`）
 - 改完产物后让 DSH 重新加载：桌面版重启应用最稳妥；`pnpm run dev:web` 在跑时客户端插件热重载
 - 本仓库自带的 `tsconfig*.json` 是 standalone 的（不依赖某台机器的 checkout 路径）；需要完整类型检查时按文件内注释把 `extends` 指回你的 DSH checkout
 

@@ -135,16 +135,33 @@ src/
       WedriveIcon.tsx       启动按钮图标
       WedocsFileIcons.tsx   22 个腾讯文档文件类型字形
       UiIcons.tsx           界面线性图标
+lib/                        入库的产物（安装时不构建）
+  host/                     宿主半：src/host 逐文件转译（exports["."] -> host/index.js）
+  shared/                   共享协议：src/shared 逐文件转译
+  client.js                 浏览器半：tsdown 打包（exports["./client"]）
 tools/
+  build-host.mjs            宿主半转译入口（重建 lib/host、lib/shared）
+  host-transpile.mjs        转译规则：stripTypeScriptTypes + 相对 .ts import 改写
   bundle.mjs                解析 tsdown 并构建客户端产物
   dev-patch.mjs             生成 cordis.dev.yml（含本机绝对路径，不入库）
   dev-proxy.mjs             同站代理：让 iframe 回退在浏览器里可登录
   whistle.rules             Whistle 版同站规则（与 dev-proxy 二选一）
 ```
 
-## 为什么宿主半不能有需要转译的语法
+## 为什么宿主半只用可擦除语法
 
-DSH 用 Node 的**类型擦除**加载 `src/host/*.ts`，没有编译步骤：`enum`、参数属性（`constructor(private x)`）、`namespace` 都会直接报错。宿主半因此只用可擦除语法（`interface` / `type` / `as` / 泛型）。
+宿主半的源码是 `src/host/*.ts`，但**发布的入口是转译后的 `lib/host/index.js`**（`package.json` 的 `exports["."]`）：包装进 profile 后位于 `node_modules` 下，Node 明确拒绝在那里擦除类型——
+
+```
+Error [ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING]: Stripping types is currently
+unsupported for files under node_modules, for ".../node_modules/wecom-dsh-plugins/src/host/index.ts"
+```
+
+`tools/build-host.mjs` 因此把 `src/host/**`、`src/shared/**` 逐文件转译到 `lib/` 下同名位置：`node:module` 的 `stripTypeScriptTypes` 剥类型，再把相对 `.ts` import 改写成 `.js`（不打包、不查类型）。`lib/` 里的产物**已入库**，安装时没有构建步骤，所以改完宿主半源码必须 `node --run build:host` 并把产物一起提交；`test/build-artifacts.test.mjs` 会在产物过期时失败。
+
+转译只擦类型、不做代码生成，所以宿主半仍然**只能用可擦除语法**：`enum`、参数属性（`constructor(private x)`）、`namespace` 这类需要真正转译的语法在 `strip` 模式下同样会报错。宿主半因此只用 `interface` / `type` / `as` / 泛型。
+
+> 开发态 overlay（`cordis.yml`）例外：它用绝对路径直接引 `src/host/index.ts`，文件在 `node_modules` 之外，类型擦除可用，省掉每次改宿主半都要重跑构建。
 
 宿主半的**每个 `@deepseek-ai/*` 运行时 import 都必须在 `peerDependencies` 里声明**：DSH 的 profile 解析器按父包的 peer 列表决定是否拦截裸模块名并映射到运行时那份实例，没声明的会退回 Node 原生解析（仓库里没有 `@deepseek-ai/*`），结果是宿主行 `inactive`、路由 404、客户端半也不加载。`import type {}` 属于类型擦除，不需要声明。
 

@@ -21,13 +21,15 @@
     "node": ">=22.18"
   },
   "scripts": {
+    "build:host": "node --disable-warning=ExperimentalWarning tools/build-host.mjs",
     "bundle": "node tools/bundle.mjs",
+    "build": "node --run build:host && node --run bundle",
     "test": "node --test",
     "web": "node tools/dev-patch.mjs && dsh web --patch ./cordis.dev.yml --no-open",
     "proxy": "node tools/dev-proxy.mjs"
   },
   "exports": {
-    ".": "./src/host/index.ts",
+    ".": "./lib/host/index.js",
     "./client": "./lib/client.js",
     "./package.json": "./package.json"
   },

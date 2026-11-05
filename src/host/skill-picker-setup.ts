@@ -34,12 +34,14 @@ wecom-cli auth init --noninteractive   # 未授权时执行，用企业微信扫
 
 ### A. 桌面版（DeepSeek Harness.app，推荐）
 
-profile 目录 \`$DSH_HOME/profiles/desktop\`，把仓库 link 进 profile：
+profile 目录 \`$DSH_HOME/profiles/desktop\`。给别人装直接从 GitHub 装（\`lib/\` 产物已入库，不需要构建）：
 
 \`\`\`bash
 cd "$DSH_HOME/profiles/desktop"
-pnpm add wecom-dsh-plugins@link:/abs/path/to/wecom-file-dsh
+pnpm add wecom-dsh-plugins@github:Cillivian/wecom-file-dsh
 \`\`\`
+
+本机改代码时改用软链 \`pnpm add wecom-dsh-plugins@link:/abs/path/to/wecom-file-dsh\`。
 
 再把包加进 \`package.json\` 的 \`dsh.profile.bundles\`（已有则跳过），重启应用。桌面版页面 origin 是 \`dsh-app://app\`，插件路由走该 authority 的转发，无需额外 \`--trusted-host\`。
 
@@ -72,6 +74,7 @@ dsh web --patch /abs/path/to/wecom-file-dsh/cordis.yml --no-open
 | 点开直接跳外部浏览器 | 说明走的是登录流程：桌面版请改用 CLI 模式；浏览器请确认同站代理已生效 |
 | 列表空但 CLI 正常 | 该机器人没有「最近浏览」记录；用搜索框按关键词找，或先在微盘里打开一次文件 |
 | iframe 里点不动 / 结果不回来 | 检查 \`postMessage\` origin 是否为 \`https://doc.weixin.qq.com\`，以及页面是否被浏览器拦截第三方 iframe |
+| 启用失败，报 \`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING\` | 装的是把 \`src/host/index.ts\` 当入口的旧版本；包在 profile 的 \`node_modules\` 里，Node 不允许在此擦除类型。升级到 \`exports["."]\` 为 \`lib/host/index.js\` 的版本后重启 |
 
 ## 五、边界
 

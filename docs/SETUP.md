@@ -6,7 +6,7 @@
 
 | 需要 | 检查命令 | 说明 |
 | --- | --- | --- |
-| Node ≥ 22.18 | `node -v` | 宿主半靠 Node 的类型擦除直接加载 `.ts` |
+| Node ≥ 22.18 | `node -v` | 只影响构建：`node:module` 的 `stripTypeScriptTypes` 需要 ≥ 22.13 |
 | DeepSeek Harness | `dsh --version` 或桌面版应用 | 桌面版与 `dsh web` 都可以 |
 | `wecom-cli` ≥ 1.2.0 | `wecom-cli --version` | 选择器与后续阅读都靠它 |
 | 企业微信授权 | `wecom-cli auth show --status` | 期望输出 `authorized` |
@@ -26,24 +26,31 @@ wecom-cli auth show --status             # 复查
 
 ## 1. 安装插件
 
-插件以 **bundle** 形式装进 profile，这是 desktop 与 web 唯一推荐的方式。
+插件以 **bundle** 形式装进 profile，这是 desktop 与 web 唯一推荐的方式。`lib/` 里的产物（`lib/host/*.js`、`lib/shared/*.js`、`lib/client.js`）都已入库，所以从 GitHub 装、从本地装都不需要构建。
 
 ### 桌面版
 
 ```bash
 DSH_HOME=${DSH_HOME:-$HOME/.dsh}
 cd "$DSH_HOME/profiles/desktop"
+
+# 给别人用：直接从 GitHub 装（需要仓库已推送）
+pnpm add wecom-dsh-plugins@github:Cillivian/wecom-file-dsh
+
+# 本机开发：软链到工作区
 pnpm add wecom-dsh-plugins@link:/abs/path/to/wecom-file-dsh
 ```
 
 确认 `package.json` 的 `dsh.profile.bundles` 数组里有 `wecom-dsh-plugins`（`pnpm add` 不一定自动加，手工补一行即可），然后重启 DeepSeek Harness。
+
+> 不要用 `github:` 装一个 `exports["."]` 还指向 `.ts` 的旧版本：包被复制进 profile 的 `node_modules` 后，Node 不允许在这里擦除类型，启动时会报 `ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`（见下文排错表）。
 
 ### `dsh web`（浏览器）
 
 ```bash
 DSH_HOME=${DSH_HOME:-$HOME/.dsh}
 cd "$DSH_HOME/profiles/web"
-pnpm add wecom-dsh-plugins@link:/abs/path/to/wecom-file-dsh
+pnpm add wecom-dsh-plugins@github:Cillivian/wecom-file-dsh
 # 同样把 wecom-dsh-plugins 加进 dsh.profile.bundles
 dsh web --no-open
 ```
@@ -52,7 +59,7 @@ dsh web --no-open
 
 ### 开发态 overlay（可选，有限制）
 
-`cordis.yml` 是 standalone `--patch` 模板。它只适合「包已经在 profile 树或它的 linked root 里」的场景：overlay 直接引用的插件路径解析不到 `@deepseek-ai/*`。
+`cordis.yml` 是 standalone `--patch` 模板。它只适合「包已经在 profile 树或它的 linked root 里」的场景：overlay 直接引用的插件路径解析不到 `@deepseek-ai/*`。overlay 里写的是 `src/host/index.ts`（绝对路径在 `node_modules` 之外，类型擦除可用），省掉每次改宿主半都要重跑构建。
 
 ```bash
 pnpm web        # 生成 cordis.dev.yml（含本机绝对路径，已被 .gitignore）后启动
@@ -131,9 +138,13 @@ dsh web --trusted-host doc.weixin.qq.com --no-open
 ## 3. 构建（改代码时）
 
 ```bash
-node --run test      # 零依赖测试，不需要 DSH 包或 wecom-cli
-node --run bundle    # 重建 lib/client.js（等价于 pnpm bundle）
+node --run test        # 零依赖测试，不需要 DSH 包或 wecom-cli
+node --run build:host  # 重建 lib/host 与 lib/shared（宿主半源码改动后）
+node --run bundle      # 重建 lib/client.js（等价于 pnpm bundle）
+node --run build       # 两者都跑
 ```
+
+宿主半的构建是**逐文件转译**：`tools/build-host.mjs` 把 `src/host/**`、`src/shared/**` 剥掉类型、把相对 `.ts` import 改成 `.js`，写到 `lib/` 下同名位置。没有打包、没有类型检查。产物**入库**：安装时没有构建步骤，所以改完源码必须 `node --run build:host` 并把 `lib/` 一起提交——`test/build-artifacts.test.mjs` 会在产物与源码不一致时失败。
 
 `tools/bundle.mjs` 按顺序找 tsdown：`$DSH_TSUDOWN` → `$DSH_CHECKOUT/node_modules/.bin/tsdown` → 仓库本身及其上两级目录下的 `node_modules/.bin/tsdown` 与 `deepseek-harness/node_modules/.bin/tsdown` → PATH。找不到时报错并说明。
 
@@ -148,5 +159,6 @@ node --run bundle    # 重建 lib/client.js（等价于 pnpm bundle）
 | 弹层显示「授权失败」或二维码一直不动 | 点「重新授权」/「重新获取二维码」重开一次登录（会先结束上一次等待扫码的进程），或 `wecom-cli auth init --noninteractive` |
 | 点开就跳外部浏览器 | 走的是官方登录流程：桌面版请留在 CLI 模式；浏览器确认同站代理已生效 |
 | 列表空白但 CLI 正常 | 该机器人没有「最近浏览」记录；用搜索框按关键词找，或先在微盘里打开一次文件 |
+| 组件启用失败、`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING` | 装的是把 `src/host/index.ts` 当入口的旧版本：包在 profile 的 `node_modules` 里，Node 不允许在此擦除类型。升级到入口为 `lib/host/index.js` 的版本（`pnpm add wecom-dsh-plugins@github:Cillivian/wecom-file-dsh`）后重启 |
 | 客户端插件加载失败、`web boot: … did not activate` | 产物里出现了非平台的 `require()`；重跑 `pnpm bundle`，不要引入需要运行时解析的 npm 包 |
 | 分栏视图层级很浅 | 微盘没有「列出文件夹子项」接口；分栏是按搜索结果的 `space_name` / `folder_name` 合成的，不是真实目录树 |
