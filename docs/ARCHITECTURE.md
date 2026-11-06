@@ -59,6 +59,11 @@ placement: plusMenu ───┘            ▲
 placement: plusMenu ───▶ ctx.commandUi 贡献「+」菜单一行
 ```
 
+- 工具行按钮**紧贴输入条「+」的右侧**，外观是同一款 28px 圆形按钮（同底色、同 hover），读起来像一个按钮组。DSH 把 `conversation.input.left` 渲染在「+」和访问模式/计划 chip **之后**，且没有中间的槽位，所以顺序靠 flex `order`：
+  - `[data-composer-card] div:has(> button > svg[data-icon="dsw-icon-plus-outline-medium"]) .wcp-launch { order: -1 }` 把按钮提到模式 chip 前面；
+  - `[data-composer-card] button:has(> svg[data-icon="dsw-icon-plus-outline-medium"]) { order: -2 }` 把「+」固定在按钮左边。
+  - 两条规则都只依赖稳定的 `data-icon`，不用哈希类名（`JZLxKW_*` 每次构建都会变）：图标改名时两条同时失效，按钮退回默认顺序（模式 chip 之后），不会跑到「+」左边。
+- 按钮**没有任何额外包裹容器**——槽位 outlet 的 `style="display: contents"` 不生成盒子，所以 `.wcp-launch` 本身就是工具行 flex 的直接子元素；圆形容器即按钮自己。
 - 槽位**在所有 placement 下都注册**：`plusMenu` 时它只渲染 `null`，但仍然承载弹层，是 `+` 菜单那一行唯一的 React 宿主。
 - `ctx.commandUi` 是可选服务：没有它（`ctx.inject(['commandUi'], …)` 未激活）时只保留工具行按钮，插件不会因此不激活。
 - 命令贡献的 `run(session)` 没有 React 上下文，所以它只把「为这个 session 打开」写进 `PickerStore`；`useInput`/chip 插入仍由槽位组件完成。

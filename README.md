@@ -72,7 +72,7 @@ pnpm add wecom-dsh-plugins@github:Cillivian/wecom-file-dsh
 
 | `placement` | 效果 |
 | --- | --- |
-| `standalone`（默认） | 只在输入条左侧工具栏显示独立按钮 |
+| `standalone`（默认） | 只在输入条左侧工具栏显示独立按钮，紧贴「+」右侧、同一款圆形样式 |
 | `plusMenu` | 只在输入条「+」菜单里显示一行，不占工具栏；弹层仍由同一个组件承载 |
 | `both` | 两处都有，共用同一个弹层与偏好 |
 

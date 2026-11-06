@@ -390,16 +390,35 @@ export const PICKER_STYLE = `.wcp-overlay{position:fixed;inset:0;z-index:2000;di
 /**
  * Composer button material, injected by the slot component itself so the
  * launcher is styled before any window ever mounts.
+ *
+ * Geometry copies the composer's own `+` button (28px circle, selector fill,
+ * solid hover) so the two read as one group. Placement does too: DSH renders
+ * `conversation.input.left` *after* the composer's `+` and access-mode chips,
+ * and registers no slot between them, so flex `order` is the only way to sit
+ * immediately right of `+`:
+ *
+ * - A `:has()`-scoped rule pulls the launcher in front of the mode chips, but
+ *   only while a `+` button is actually present.
+ * - A sibling rule pushes that `+` to `-2`, keeping it on our left.
+ *
+ * Both selectors key off `data-icon` (a stable DSH attribute), not the hashed
+ * CSS-module class, so if a DSH build renames the icon neither rule matches and
+ * the launcher falls back to the default order (after the mode chips) instead
+ * of jumping ahead of `+`.
  */
 export const LAUNCH_STYLE = `
 .wcp-launch{
   display:grid;place-items:center;flex:none;width:28px;height:28px;padding:0;
-  border:0;border-radius:999px;cursor:pointer;
+  border:0;border-radius:999px;corner-shape:round;cursor:pointer;
   background:var(--dsw-specific-selector);color:var(--dsw-alias-label-primary);
   transition:background-color .12s ease;
 }
-.wcp-launch:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary-new-colorprimary-new-color, var(--dsw-static-deepseek-500, #4176e6)) 16%, var(--dsw-specific-selector))}
-.wcp-launch:active{background:color-mix(in srgb, var(--dsw-alias-brand-primary-new-colorprimary-new-color, var(--dsw-static-deepseek-500, #4176e6)) 26%, var(--dsw-specific-selector))}
+/* Both rules hinge on the same stable data-icon, so they either apply
+   together (button lands right of +) or not at all (default order). */
+[data-composer-card] div:has(> button > svg[data-icon="dsw-icon-plus-outline-medium"]) .wcp-launch{order:-1}
+[data-composer-card] button:has(> svg[data-icon="dsw-icon-plus-outline-medium"]){order:-2}
+@media (hover:hover){.wcp-launch:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-solid)}}
+.wcp-launch:active{background:var(--dsw-alias-interactive-bg-hover-solid)}
 .wcp-launch:focus-visible{outline:2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color, var(--dsw-static-deepseek-500, #4176e6));outline-offset:1px}
 @media (prefers-reduced-motion:reduce){.wcp-launch{transition:none}}
 `

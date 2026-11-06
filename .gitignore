@@ -6,3 +6,4 @@ certs/
 cordis.dev.yml
 .tmp/
 .DS_Store
+.pnpm-store/

@@ -78,7 +78,7 @@ pnpm web        # 生成 cordis.dev.yml（含本机绝对路径，已被 .gitign
 
 `id` 要和 bundle 层插入的行一致（见本包的 `cordis.patch.yml`，那里是 `id: wecom-picker`）。
 
-- `standalone`：输入条左侧工具栏的独立按钮（默认，行为不变）
+- `standalone`：输入条左侧工具栏的独立按钮，紧贴「+」右侧、与它同款圆形（默认，行为不变）
 - `plusMenu`：只在「+」菜单里出现一行「企业微信-微盘」
 - `both`：两处都有，点哪个都开同一个弹层
 
